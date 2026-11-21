@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>小鹏汇天 X3-F 飞行汽车 · 深度安全分析 · 刘天一 15230610</title>
+<style>
+  :root{
+    --bg:#0a0e14; --bg2:#0f1620; --card:#131c28; --line:#1f2b3a;
+    --text:#d6e0ec; --muted:#7e90a8; --accent:#f59e0b; --accent2:#38bdf8;
+    --ok:#34d399; --warn:#fbbf24; --danger:#f87171;
+    --font:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.78;font-size:15px;}
+  a{color:var(--accent);text-decoration:none;}
+
+  header{position:sticky;top:0;z-index:100;background:rgba(10,14,20,.9);backdrop-filter:blur(14px);border-bottom:1px solid var(--line);}
+  .nav{max-width:1160px;margin:0 auto;padding:13px 26px;display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;}
+  .brand strong{font-size:15px;color:#fff;letter-spacing:.4px;}
+  .brand span{font-size:11px;color:var(--muted);letter-spacing:.8px;display:block;}
+  .nav-links{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;}
+  .nav-links a{color:var(--muted);transition:.2s;}
+  .nav-links a:hover{color:var(--accent);}
+
+  .hero{max-width:1160px;margin:0 auto;padding:70px 26px 50px;position:relative;overflow:hidden;}
+  .hero::after{content:"";position:absolute;top:-100px;right:-60px;width:380px;height:380px;background:radial-gradient(circle,rgba(245,158,11,.1),transparent 70%);pointer-events:none;}
+  .hero-tag{display:inline-block;font-size:10.5px;letter-spacing:2px;color:var(--accent);border:1px solid rgba(245,158,11,.3);padding:4px 13px;border-radius:100px;margin-bottom:20px;}
+  .hero h1{font-size:clamp(28px,4.2vw,44px);line-height:1.3;color:#fff;font-weight:800;letter-spacing:-.5px;max-width:840px;margin-bottom:18px;}
+  .hero h1 em{font-style:normal;color:var(--accent);}
+  .hero p{max-width:780px;color:var(--muted);font-size:14.5px;margin-bottom:26px;}
+  .meta{display:flex;gap:26px;flex-wrap:wrap;padding-top:22px;border-top:1px solid var(--line);}
+  .meta div{font-size:12.5px;color:var(--muted);}
+  .meta div b{display:block;color:#fff;font-size:14px;font-weight:600;margin-top:2px;}
+
+  section{max-width:1160px;margin:0 auto;padding:58px 26px;}
+  .sec-label{font-size:10.5px;letter-spacing:2.5px;color:var(--accent);margin-bottom:9px;text-transform:uppercase;}
+  .sec-title{font-size:24px;color:#fff;font-weight:700;margin-bottom:11px;letter-spacing:-.3px;}
+  .sec-desc{color:var(--muted);max-width:800px;margin-bottom:32px;font-size:14px;}
+
+  /* 风险层 */
+  .risk-layers{display:flex;flex-direction:column;gap:14px;}
+  .rlayer{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:22px 24px;display:grid;grid-template-columns:auto 1fr;gap:18px;align-items:start;}
+  .rlayer .idx{font-size:11px;color:var(--accent);letter-spacing:1px;border:1px solid rgba(245,158,11,.25);border-radius:8px;padding:5px 9px;white-space:nowrap;}
+  .rlayer h4{font-size:15px;color:#fff;margin-bottom:6px;}
+  .rlayer p{font-size:13px;color:var(--muted);}
+
+  /* 构型卡片 */
+  .grid-3{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;}
+  .gcard{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:22px;}
+  .gcard .tag{font-size:10.5px;color:var(--accent2);letter-spacing:1px;margin-bottom:7px;}
+  .gcard h4{font-size:15px;color:#fff;margin-bottom:8px;}
+  .gcard p{font-size:13px;color:var(--muted);}
+  .gcard .limit{margin-top:12px;padding-top:11px;border-top:1px solid var(--line);font-size:12px;color:var(--warn);}
+
+  /* 表格 */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:13px;}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;min-width:680px;}
+  th,td{padding:12px 15px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;}
+  th{background:#0d141d;color:var(--muted);font-weight:500;font-size:11.5px;letter-spacing:.5px;}
+  tr:last-child td{border-bottom:none;}
+  td:first-child{color:#fff;font-weight:600;}
+  .tag-pill{display:inline-block;font-size:10.5px;padding:2px 8px;border-radius:100px;white-space:nowrap;}
+  .p-ok{background:rgba(52,211,153,.12);color:var(--ok);}
+  .p-warn{background:rgba(251,191,36,.12);color:var(--warn);}
+  .p-danger{background:rgba(248,113,113,.12);color:var(--danger);}
+
+  /* 事故案例 */
+  .case-box{background:linear-gradient(135deg,rgba(248,113,113,.06),rgba(248,113,113,.02));border:1px solid rgba(248,113,113,.25);border-radius:14px;padding:26px;}
+  .case-box .case-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+  .case-box .case-head .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);}
+  .case-box .case-head h4{font-size:16px;color:#fff;}
+  .case-box p{font-size:13.5px;color:var(--muted);margin-bottom:12px;}
+  .case-box .lesson{padding-top:12px;border-top:1px solid rgba(248,113,113,.15);font-size:13px;color:var(--text);}
+
+  /* 对比 */
+  .compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;}
+  .ccard{border-radius:14px;padding:24px;border:1px solid var(--line);}
+  .ccard.a{background:rgba(245,158,11,.04);border-color:rgba(245,158,11,.2);}
+  .ccard.b{background:rgba(56,189,248,.04);border-color:rgba(56,189,248,.2);}
+  .ccard h4{font-size:15px;color:#fff;margin-bottom:12px;}
+  .ccard ul{list-style:none;font-size:13px;color:var(--muted);}
+  .ccard ul li{padding:6px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+  .ccard ul li:last-child{border-bottom:none;}
+  .ccard ul li b{color:var(--text);font-weight:600;}
+
+  /* 结论 */
+  .verdict-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:16px;}
+  .vcard{border:1px solid var(--line);border-radius:13px;padding:22px;background:var(--bg2);}
+  .vhead{display:flex;align-items:center;gap:9px;margin-bottom:10px;}
+  .vhead .dot{width:8px;height:8px;border-radius:50%;}
+  .vhead h4{font-size:14.5px;color:#fff;}
+  .vcard p{font-size:12.5px;color:var(--muted);}
+  .vcard .concl{margin-top:13px;padding-top:11px;border-top:1px solid var(--line);font-size:12px;font-weight:600;}
+  .c-ok{color:var(--ok);} .c-warn{color:var(--warn);} .c-danger{color:var(--danger);}
+
+  footer{border-top:1px solid var(--line);margin-top:36px;padding:32px 26px;text-align:center;font-size:11.5px;color:var(--muted);}
+  footer strong{color:var(--text);}
+
+  @media(max-width:700px){
+    .nav{padding:11px 16px;} .nav-links{gap:11px;font-size:11.5px;}
+    section{padding:44px 16px;} .hero{padding:48px 16px 36px;}
+    .rlayer{grid-template-columns:1fr;} .compare-grid{grid-template-columns:1fr;}
+    .meta{gap:14px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">
+      <strong>X3-F 飞行汽车 · 深度安全分析</strong>
+      <span>刘天一 15230610</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#risk">架构风险</a>
+      <a href="#redundancy">冗余设计</a>
+      <a href="#battery">电池安全</a>
+      <a href="#chute">整机降落伞</a>
+      <a href="#case">事故案例</a>
+      <a href="#compare">路径对比</a>
+      <a href="#verdict">安全判断</a>
+    </nav>
+  </div>
+</header>
+
+<div class="hero">
+  <div class="hero-tag">课程作业 · 安全分析 · 小鹏汇天“陆地航母”X3-F</div>
+  <h1>分体式构型带来了<em>独特的风险</em>，也带来了<em>独特的安全冗余</em></h1>
+  <p>
+    上一份作业将小鹏汇天“陆地航母”作为分体式飞行汽车的代表产品进行了技术调研。
+    本报告聚焦其飞行体 <strong>X3-F</strong>，从构型安全、飞控与电池冗余、整机救生系统、适航审定目标与真实事故案例五个维度，判断它的安全边界究竟落在哪里。
+  </p>
+  <div class="meta">
+    <div>姓名<b>刘天一</b></div>
+    <div>学号<b>15230610</b></div>
+    <div>分析对象<b>小鹏汇天 X3-F（飞行体）</b></div>
+    <div>数据截止<b>2026 年 11 月</b></div>
+  </div>
+</div>
+
+<!-- ===== 01 架构风险 ===== -->
+<section id="risk">
+  <div class="sec-label">01 / ARCHITECTURE RISK</div>
+  <h2 class="sec-title">分体式设计：把“飞行”和“地面”的风险隔离开，但也引入了新的耦合点</h2>
+  <p class="sec-desc">
+    X3-F 的安全分析不能脱离“分体式”这个前提。飞行体与陆行体可自动分离结合，二者分别走民航适航三证与汽车公告认证两条完全不同的安全体系[reference:0]。这种隔离本身是一种安全优势，但分离/结合这个动作，是传统航空器和传统汽车都不曾面对的新风险源。
+  </p>
+
+  <div class="risk-layers">
+    <div class="rlayer">
+      <div class="idx">R1</div>
+      <div>
+        <h4>分离与结合过程的机械与逻辑耦合</h4>
+        <p>陆行体与飞行体之间的自动对接/分离，涉及结构锁止、电气连接、通信握手等多重界面。官方描述为“一键操作，5 分钟内自动分离”[reference:1]。在这个过程中，任何一个界面的状态不一致，都可能导致分离失败、结合不牢或连接器损伤。虽然这不是飞行中的高频动作，但它是分体式架构独有的地面安全关口。</p>
+      </div>
+    </div>
+    <div class="rlayer">
+      <div class="idx">R2</div>
+      <div>
+        <h4>“飞行体单独取证”意味着安全责任边界的切分</h4>
+        <p>飞行体 X3-F 以轻型运动类（LSA）申请 TC，其应急着陆等条款的安全性要求“要比正常类旋翼低”，专用条件与轻型运动直升机类似。这意味着 X3-F 的安全目标等级在制度上就低于公共运输级 eVTOL。这不是缺陷，而是产品定位（私人娱乐飞行、昼间目视）与安全等级之间的匹配关系。分析它的安全性，必须把“它被允许做什么”放在“它有多安全”之前。</p>
+      </div>
+    </div>
+    <div class="rlayer">
+      <div class="idx">R3</div>
+      <div>
+        <h4>陆行体作为“移动充电宝”的双刃剑</h4>
+        <p>陆行体搭载 800V 碳化硅增程动力平台，CLTC 续航超 1000 km，可为飞行体多次补能。好处是飞行体无需依赖地面固定充电设施，降低了“因电量不足而冒险飞行”的压力。但风险在于：陆行体本身是高压、高能量密度的地面车辆，它与飞行体共处同一收纳空间，热失控与电气安全的隔离设计要求高于普通车辆与普通航空器的简单叠加。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 02 冗余设计 ===== -->
+<section id="redundancy">
+  <div class="sec-label">02 / REDUNDANCY</div>
+  <h2 class="sec-title">构型冗余与飞控冗余：工程层面最扎实的部分</h2>
+  <p class="sec-desc">
+    在“出故障之后还能不能安全回来”这个问题上，X3-F 的设计思路是清晰的：用多重、异构的备份，把单点失效和双点失效的影响控制在可承受范围内。
+  </p>
+
+  <div class="grid-3">
+    <div class="gcard">
+      <div class="tag">构型冗余</div>
+      <h4>6 轴 6 桨 + 2 可反转涵道</h4>
+      <p>飞行体为六轴六桨构型，额外增加 2 个可反转涵道。官方明确的容错目标是：<strong>6 副旋翼失效 2 副，仍可安全飞行/着陆</strong>。旋翼失效瞬间，飞控进行毫秒级算法调整，完成故障隔离与功率再分配[reference:6]。</p>
+      <div class="limit">边界：容错能力覆盖“双旋翼失效”，但不覆盖更严重的多旋翼同时失效或结构性损伤。</div>
+    </div>
+    <div class="gcard">
+      <div class="tag">飞控冗余</div>
+      <h4>三余度异构冗余架构</h4>
+      <p>配备三套飞控计算机和三套定位导航设备，从系统、硬件、供电、通信、软件到算法均采用独立且异构的技术方案。官方称这种设计“有效避免了单点、双点失效后不可控的问题”。通俗地说，飞控层面相当于有三位驾驶员，一位出问题，另一位可以接管[reference:7][reference:8]。</p>
+      <div class="limit">异构的意义：三套系统不完全相同，降低“同一缺陷同时影响三套备份”的共因失效概率。</div>
+    </div>
+    <div class="gcard">
+      <div class="tag">动力与供电冗余</div>
+      <h4>双冗余独立低压供电</h4>
+      <p>电推进单元的通讯、传感器等关键环节采用双冗余独立低压供电系统，A 路异常时 B 路毫秒级无缝接管。动力电池也做了备份设计[reference:9][reference:10]。这与飞控的三余度共同构成了“飞控—动力—供电”三条并行的冗余链路。</p>
+      <div class="limit">关键区分：电池有备份不等于续航翻倍。备份的意义在于故障后的安全降落，而非维持正常航程。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 03 电池安全 ===== -->
+<section id="battery">
+  <div class="sec-label">03 / BATTERY SAFETY</div>
+  <h2 class="sec-title">航空级电池：安全认证的“双轨”是实质性进步，但化学体系的天花板仍在</h2>
+  <p class="sec-desc">
+    电池是 eVTOL 安全链条中最难同时满足“高能量密度、高放电功率、高安全裕度”三个要求的子系统。X3-F 的动力电池在认证层面取得了阶段性突破，但需要准确理解“四重防护”和“双认证”实际覆盖了什么。
+  </p>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>维度</th>
+          <th>X3-F 动力电池状态</th>
+          <th>安全含义</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>电芯与能量密度</td>
+          <td>高硅高镍电芯，360 Wh/kg，最大放电功率 25C[reference:11]</td>
+          <td>高硅高镍路线在能量密度上有优势，但热稳定性的本征挑战高于磷酸铁锂体系，安全设计负担更重</td>
+        </tr>
+        <tr>
+          <td>安全防护</td>
+          <td>“四重航空级安全防护”，热安全设计符合航空适航标准[reference:12]</td>
+          <td>“四重”是工程防护层级的描述，具体条款需以适航符合性验证报告为准；热安全达标意味着通过局方规定的地面与飞行热试验</td>
+        </tr>
+        <tr>
+          <td>认证覆盖</td>
+          <td>行业首个同时通过汽车法规与航空适航双认证[reference:13]</td>
+          <td>双认证的意义在于：同一块电池既要满足车规的滥用与耐久要求，也要满足航空的坠撞与热失控安全目标，验证负担高于单一认证</td>
+        </tr>
+        <tr>
+          <td>验证规模</td>
+          <td>累计验证电芯超过 10 万只[reference:14]</td>
+          <td>大样本量有助于暴露制造一致性缺陷，但样本量本身不等于运营场景覆盖</td>
+        </tr>
+        <tr>
+          <td>续航约束</td>
+          <td>满电支持约 6 次飞行，单次飞行时间有限[reference:15]</td>
+          <td>短航时意味着电池长期处于高放电倍率循环，对热管理和循环寿命提出更高要求</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ===== 04 整机降落伞 ===== -->
+<section id="chute">
+  <div class="sec-label">04 / PARACHUTE</div>
+  <h2 class="sec-title">整机多伞救生系统：最后一道防线，也是设计哲学的立场声明</h2>
+  <p class="sec-desc">
+    X3-F 配备了自主研发的<strong>整机多伞救生系统</strong>，并于 2023 年 10 月完成 50 米超低空飞行开伞试验，官方称“填补国内外空白”。这是一个值得放在安全架构层面认真讨论的配置，因为它反映了一种与 Joby S4 截然不同的安全哲学。
+  </p>
+
+  <div class="risk-layers">
+    <div class="rlayer">
+      <div class="idx">A</div>
+      <div>
+        <h4>它解决的是什么问题</h4>
+        <p>整机降落伞覆盖的是“<strong>冗余已经耗尽之后</strong>”的场景：飞控三套全部失效、动力损失超出构型容错能力、或发生结构性损伤导致无法维持可控飞行。在这个意义上，它不是冗余的替代品，而是冗余的补充。</p>
+      </div>
+    </div>
+    <div class="rlayer">
+      <div class="idx">B</div>
+      <div>
+        <h4>50 米超低空开伞的工程难度</h4>
+        <p>高度越低，开伞时间窗口越窄，伞衣充气与降速过程必须极快完成。50 米量级的成功试验说明该系统在极低高度具备启动能力，但试验条件与真实故障场景（姿态、速度、旋翼干扰）之间的差异，仍需通过更多符合性验证来覆盖。</p>
+      </div>
+    </div>
+    <div class="rlayer">
+      <div class="idx">C</div>
+      <div>
+        <h4>与“冗余优先”路线的张力</h4>
+        <p>Joby S4 的设计逻辑是：<strong>不依赖整机降落伞</strong>，而是通过多重冗余让“任何运动部件的失效”都能被剩余系统吸收，从而安全着陆。有讨论明确指出，这种思路“被认为比依赖降落伞更安全、更可靠，因为降落伞并非飞机基础安全水平的内在组成部分”[reference:17]。X3-F 同时做深冗余和加装备用伞，在工程上是保守的，但也从侧面说明其对“冗余耗尽”场景的担忧并未被冗余设计完全消除。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 05 事故案例 ===== -->
+<section id="case">
+  <div class="sec-label">05 / CASE</div>
+  <h2 class="sec-title">真实事故：2025 年长春航展双机接触事件</h2>
+  <p class="sec-desc">
+    安全分析不能只停留在设计参数上。2025 年 9 月 16 日，长春航展预演结束后，两架小鹏汇天 eVTOL 在双机编队演练中因飞行间距不足发生接触，一架正常降落，另一架在着陆时机身受损起火。官方确认现场人员安全，具体原因在进一步调查中[reference:18]。
+  </p>
+
+  <div class="case-box">
+    <div class="case-head"><span class="dot"></span><h4>这起事故暴露了什么，没有暴露什么</h4></div>
+    <p>
+      <strong>它暴露的：</strong>多机协同运行中的间隔管理，不是单机冗余设计能覆盖的风险。三余度飞控、双旋翼容错、整机降落伞，解决的都是“单机内部故障”的问题；但当两架航空器在空间上发生接触时，安全边界从飞控冗余转移到了<strong>运行规则、人员训练和空域管理</strong>。有分析指出，问题可能出在飞行人员操作熟练度上，且现阶段飞行保障体系与基础设施仍有欠缺[reference:19]。
+    </p>
+    <p>
+      <strong>它没有暴露的：</strong>没有证据表明这起事故源于 X3-F 的飞控失效、动力失效或电池热失控。起火发生在“着陆时机身受损”之后，属于撞击后的次生后果，而非飞行中的自发起火。因此不能据此反推其冗余设计无效。
+    </p>
+    <div class="lesson">
+      <strong>安全分析上的启示：</strong>eVTOL 的安全不能只按“单机适航”来评估。适航证解决的是航空器本身的初始安全水平；运行安全还需要叠加编队间隔规则、碰撞预警、驾驶员训练和现场保障。这起事故是一个<strong>运行层安全事件</strong>，而不是一个<strong>设计层安全失败</strong>的证明。
+    </div>
+  </div>
+</section>
+
+<!-- ===== 06 路径对比 ===== -->
+<section id="compare">
+  <div class="sec-label">06 / COMPARISON</div>
+  <h2 class="sec-title">X3-F 与 Joby S4：两种安全哲学，对应两种运营边界</h2>
+  <p class="sec-desc">
+    把 X3-F 与 Joby S4 放在一起比较，不是为了分高下，而是为了说明“安全”在 eVTOL 领域不是一个单一标量。安全目标等级、构型路线和运营场景三者是绑定的。
+  </p>
+
+  <div class="compare-grid">
+    <div class="ccard a">
+      <h4>小鹏汇天 X3-F</h4>
+      <ul>
+        <li><b>安全目标等级：</b>以轻型运动类申请 TC，安全要求低于正常类旋翼</li>
+        <li><b>构型路线：</b>多旋翼（6 轴 6 桨 + 2 涵道），垂直起降，无固定翼巡航</li>
+        <li><b>冗余策略：</b>三余度异构飞控 + 双旋翼容错 + 整机多伞救生系统</li>
+        <li><b>设计定位：</b>私人娱乐飞行、昼间目视，不用于商业载客</li>
+        <li><b>运营边界：</b>与 LSA 安全等级匹配的封闭/低风险场景，而非人口密集区公共运输</li>
+      </ul>
+    </div>
+    <div class="ccard b">
+      <h4>Joby S4</h4>
+      <ul>
+        <li><b>安全目标等级：</b>按 FAA 动力升力类适航标准，目标公共运输级，灾难性故障概率目标 10⁻⁸/飞行小时[reference:22]</li>
+        <li><b>构型路线：</b>六倾转旋翼，垂直起降后切换固定翼巡航，设计航程约 240 km</li>
+        <li><b>冗余策略：</b>六电机、四电池包、三重飞控全链路冗余，<b>不依赖整机降落伞</b>[reference:25]</li>
+        <li><b>设计定位：</b>城市空中出租车、机场接驳、城际短途通勤</li>
+        <li><b>运营边界：</b>公共运输级安全标准支撑的高密度商业运营</li>
+      </ul>
+    </div>
+  </div>
+
+  <p class="sec-desc" style="margin-top:22px;margin-bottom:0;">
+    核心差异不在“谁更安全”，而在<strong>“安全等级与场景是否匹配”</strong>。用 Joby S4 的 10⁻⁸ 公共运输标准去要求 X3-F，在制度上不成立，因为 X3-F 本就不以公共运输为定位；反过来，用 X3-F 的 LSA 安全边界去支撑城市空中出租车的规模化运营，同样不成立。安全分析的任务，是判断一款产品的安全水平是否<strong>诚实地对应</strong>它所声称的用途。
+  </p>
+</section>
+
+<!-- ===== 07 安全判断 ===== -->
+<section id="verdict">
+  <div class="sec-label">07 / VERDICT</div>
+  <h2 class="sec-title">分层安全判断</h2>
+  <p class="sec-desc">
+    笼统地问“X3-F 安不安全”无法得到有意义的回答。更有分析价值的判断是：<strong style="color:#fff;">在它被允许的用途和场景边界内，它的安全设计是否足够、冗余是否覆盖了主要风险、以及尚未被覆盖的残余风险是什么。</strong>
+  </p>
+
+  <div class="verdict-grid">
+    <div class="vcard">
+      <div class="vhead"><span class="dot" style="background:var(--ok);"></span><h4>设计冗余 · 在同类产品中扎实</h4></div>
+      <p>
+        三余度异构飞控、6 轴 6 桨双旋翼容错、双冗余供电、航空级电池防护，构成了“飞控—动力—能源”三条并行冗余链路。整机多伞救生系统进一步覆盖了冗余耗尽后的极端场景。对于一款面向个人用户的 LSA 级 eVTOL，这套冗余配置的深度是充分的。
+      </p>
+      <div class="concl c-ok">判断：单机设计层面的主要失效模式已被多重冗余覆盖。</div>
+    </div>
+
+    <div class="vcard">
+      <div class="vhead"><span class="dot" style="background:var(--warn);"></span><h4>安全等级与场景的匹配 · 必须被诚实对待</h4></div>
+      <p>
+        X3-F 以轻型运动类取证，限昼间目视、私人娱乐飞行，不用于商业载客。这意味着它的安全目标等级在制度上就不承担公共运输的风险标准。如果运营方或用户将其用于超出这一边界的高密度、复杂气象或载客场景，安全冗余的“充足性”就会失效——不是设计变差了，而是场景超出了设计假设。
+      </p>
+      <div class="concl c-warn">判断：安全的前提是“在它被允许的场景里使用它”。</div>
+    </div>
+
+    <div class="vcard">
+      <div class="vhead"><span class="dot" style="background:var(--danger);"></span><h4>残余风险 · 分体式耦合与运行层安全</h4></div>
+      <p>
+        分体式架构引入了分离/结合这一独特的地面风险界面，这是传统航空器和传统汽车都不曾系统验证过的。长春航展事件则提醒：多机协同、人员训练、现场保障等运行层安全，不在适航证的覆盖范围内，却直接决定真实场景中的安全结果。这两类风险，是当前冗余设计尚未、也难以单独覆盖的部分。
+      </p>
+      <div class="concl c-danger">判断：设计冗余解决“机器不出错”，但解决不了“系统不出错”。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <strong>小鹏汇天 X3-F 飞行汽车 · 深度安全分析</strong> · 刘天一 15230610<br>
+  本页面为课程作业，数据来源于企业公开信息、适航审定公开资料及公开事故通报，截止 2026 年 11 月。
+</footer>
+
+</body>
+</html>
