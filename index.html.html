@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞行汽车深度调研 · 刘天一 15230610</title>
+<style>
+  :root{
+    --bg:#0b0f17; --bg2:#111827; --card:#151d2b; --line:#263044;
+    --text:#dbe4f0; --muted:#8b9bb4; --accent:#5eead4; --accent2:#38bdf8;
+    --warn:#fbbf24; --danger:#f87171; --ok:#34d399;
+    --font: "PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,sans-serif;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg);color:var(--text);font-family:var(--font);line-height:1.75;font-size:15px;}
+  a{color:var(--accent);text-decoration:none;}
+
+  /* ---------- 顶栏 ---------- */
+  header{
+    position:sticky;top:0;z-index:100;
+    background:rgba(11,15,23,.88);backdrop-filter:blur(14px);
+    border-bottom:1px solid var(--line);
+  }
+  .nav{
+    max-width:1180px;margin:0 auto;padding:14px 28px;
+    display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+  }
+  .brand{display:flex;flex-direction:column;gap:2px;}
+  .brand strong{font-size:16px;letter-spacing:.5px;color:#fff;}
+  .brand span{font-size:11px;color:var(--muted);letter-spacing:1px;}
+  .nav-links{display:flex;gap:18px;flex-wrap:wrap;font-size:13px;}
+  .nav-links a{color:var(--muted);transition:.2s;}
+  .nav-links a:hover{color:var(--accent);}
+
+  /* ---------- 首屏 ---------- */
+  .hero{
+    max-width:1180px;margin:0 auto;padding:76px 28px 56px;
+    position:relative;overflow:hidden;
+  }
+  .hero::before{
+    content:"";position:absolute;top:-120px;right:-80px;width:420px;height:420px;
+    background:radial-gradient(circle, rgba(94,234,212,.12), transparent 70%);
+    pointer-events:none;
+  }
+  .hero-tag{
+    display:inline-block;font-size:11px;letter-spacing:2px;color:var(--accent);
+    border:1px solid rgba(94,234,212,.3);padding:5px 14px;border-radius:100px;margin-bottom:22px;
+  }
+  .hero h1{
+    font-size:clamp(30px,4.4vw,48px);line-height:1.25;color:#fff;font-weight:800;
+    letter-spacing:-.5px;max-width:820px;margin-bottom:20px;
+  }
+  .hero h1 em{font-style:normal;color:var(--accent);}
+  .hero p{max-width:760px;color:var(--muted);font-size:15px;margin-bottom:30px;}
+  .meta{
+    display:flex;gap:28px;flex-wrap:wrap;padding-top:24px;border-top:1px solid var(--line);
+  }
+  .meta div{font-size:13px;color:var(--muted);}
+  .meta div b{display:block;color:#fff;font-size:15px;font-weight:600;margin-top:2px;}
+
+  /* ---------- 通用区块 ---------- */
+  section{max-width:1180px;margin:0 auto;padding:64px 28px;}
+  .sec-label{font-size:11px;letter-spacing:2.5px;color:var(--accent);margin-bottom:10px;text-transform:uppercase;}
+  .sec-title{font-size:26px;color:#fff;font-weight:700;margin-bottom:12px;letter-spacing:-.3px;}
+  .sec-desc{color:var(--muted);max-width:780px;margin-bottom:36px;font-size:14px;}
+
+  /* ---------- 产品卡片 ---------- */
+  .products{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:22px;}
+  .pcard{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:26px 24px;transition:.25s;position:relative;overflow:hidden;
+  }
+  .pcard:hover{border-color:rgba(94,234,212,.35);transform:translateY(-3px);}
+  .pcard .flag{font-size:11px;color:var(--muted);letter-spacing:1px;margin-bottom:6px;}
+  .pcard h3{font-size:19px;color:#fff;margin-bottom:4px;}
+  .pcard .role{font-size:12px;color:var(--accent2);margin-bottom:16px;}
+  .specs{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:18px 0;font-size:13px;}
+  .specs div{background:rgba(255,255,255,.03);border-radius:8px;padding:8px 10px;}
+  .specs span{display:block;color:var(--muted);font-size:11px;margin-bottom:2px;}
+  .specs b{color:#fff;font-weight:600;font-size:13px;}
+  .pcard p.note{font-size:12.5px;color:var(--muted);margin-top:12px;padding-top:14px;border-top:1px solid var(--line);}
+
+  /* ---------- 对比表 ---------- */
+  .table-wrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;}
+  table{width:100%;border-collapse:collapse;font-size:13px;min-width:720px;}
+  th,td{padding:13px 16px;text-align:left;border-bottom:1px solid var(--line);}
+  th{background:#0f1724;color:var(--muted);font-weight:500;font-size:12px;letter-spacing:.5px;}
+  tr:last-child td{border-bottom:none;}
+  td:first-child{color:#fff;font-weight:600;}
+  .tag{display:inline-block;font-size:11px;padding:2px 9px;border-radius:100px;white-space:nowrap;}
+  .tag.ok{background:rgba(52,211,153,.12);color:var(--ok);}
+  .tag.warn{background:rgba(251,191,36,.12);color:var(--warn);}
+  .tag.danger{background:rgba(248,113,113,.12);color:var(--danger);}
+
+  /* ---------- 技术瓶颈 ---------- */
+  .tech-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:18px;}
+  .tcard{background:var(--bg2);border:1px solid var(--line);border-radius:14px;padding:22px;}
+  .tcard .num{font-size:11px;color:var(--accent);letter-spacing:1px;margin-bottom:8px;}
+  .tcard h4{font-size:15px;color:#fff;margin-bottom:8px;}
+  .tcard p{font-size:13px;color:var(--muted);}
+  .tcard .status{margin-top:12px;font-size:11px;color:var(--warn);}
+
+  /* ---------- 场景分层 ---------- */
+  .scenes{display:flex;flex-direction:column;gap:0;border-left:2px solid var(--line);margin-left:8px;}
+  .scene{position:relative;padding:0 0 32px 28px;}
+  .scene:last-child{padding-bottom:0;}
+  .scene::before{
+    content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;
+    border-radius:50%;background:var(--accent);border:2px solid var(--bg);
+  }
+  .scene h4{color:#fff;font-size:15px;margin-bottom:4px;}
+  .scene span{font-size:11px;color:var(--accent);letter-spacing:1px;}
+  .scene p{font-size:13px;color:var(--muted);margin-top:6px;}
+
+  /* ---------- 市场数据 ---------- */
+  .market-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
+  .mcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:20px;}
+  .mcard .big{font-size:26px;color:var(--accent);font-weight:800;letter-spacing:-.5px;}
+  .mcard .label{font-size:12px;color:var(--muted);margin-top:4px;}
+  .mcard .src{font-size:10.5px;color:#5a6a82;margin-top:8px;}
+
+  /* ---------- 可行性结论 ---------- */
+  .verdict{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:18px;}
+  .vcard{border:1px solid var(--line);border-radius:14px;padding:24px;background:var(--bg2);}
+  .vcard .vhead{display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .vcard .dot{width:8px;height:8px;border-radius:50%;}
+  .vcard h4{font-size:15px;color:#fff;}
+  .vcard p{font-size:13px;color:var(--muted);}
+  .vcard .conclusion{margin-top:14px;padding-top:12px;border-top:1px solid var(--line);font-size:12.5px;font-weight:600;}
+  .c-ok{color:var(--ok);} .c-warn{color:var(--warn);} .c-danger{color:var(--danger);}
+
+  /* ---------- 页脚 ---------- */
+  footer{border-top:1px solid var(--line);margin-top:40px;padding:36px 28px;text-align:center;font-size:12px;color:var(--muted);}
+  footer strong{color:var(--text);}
+
+  /* ---------- 响应式 ---------- */
+  @media(max-width:640px){
+    .nav{padding:12px 18px;}
+    .nav-links{gap:12px;font-size:12px;}
+    section{padding:48px 18px;}
+    .hero{padding:52px 18px 40px;}
+    .specs{grid-template-columns:1fr;}
+    .meta{gap:16px;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="nav">
+    <div class="brand">
+      <strong>飞行汽车 · 深度调研</strong>
+      <span>刘天一 15230610</span>
+    </div>
+    <nav class="nav-links">
+      <a href="#products">代表产品</a>
+      <a href="#compare">横向对比</a>
+      <a href="#tech">技术瓶颈</a>
+      <a href="#scenes">应用场景</a>
+      <a href="#market">市场可行性</a>
+      <a href="#verdict">可行性判断</a>
+    </nav>
+  </div>
+</header>
+
+<!-- ================= 首屏 ================= -->
+<div class="hero">
+  <div class="hero-tag">课程作业 · 技术调研与可行性分析</div>
+  <h1>飞行汽车：从<em>工程验证</em>到<em>商业闭环</em>，还有多远？</h1>
+  <p>
+    以 eVTOL 为核心形态的飞行汽车，正在经历从“能飞”到“能卖、能运营”的关键转折。
+    本报告围绕产品型号、子系统与关键技术，结合适航进展与市场数据，对技术可行性与市场可行性做分层判断。
+  </p>
+  <div class="meta">
+    <div>姓名<b>刘天一</b></div>
+    <div>学号<b>15230610</b></div>
+    <div>调研范围<b>产品 · 技术 · 适航 · 市场</b></div>
+    <div>数据截止<b>2026 年 11 月</b></div>
+  </div>
+</div>
+
+<!-- ================= 代表产品 ================= -->
+<section id="products">
+  <div class="sec-label">01 / PRODUCTS</div>
+  <h2 class="sec-title">三条技术路线的代表性产品</h2>
+  <p class="sec-desc">
+    当前飞行汽车并非单一形态。倾转旋翼、复合翼/多旋翼、以及“飞行体与陆行体分体”的路线各有代表产品，成熟度和商业化节奏差异明显。
+  </p>
+
+  <div class="products">
+    <div class="pcard">
+      <div class="flag">美国 · 倾转旋翼</div>
+      <h3>Joby S4</h3>
+      <div class="role">五座载人 eVTOL / 空中出租车</div>
+      <div class="specs">
+        <div><span>最高巡航速度</span><b>约 322 km/h</b></div>
+        <div><span>设计航程</span><b>约 241 km</b></div>
+        <div><span>商业航程（含储备）</span><b>约 161 km</b></div>
+        <div><span>载员</span><b>1 飞行员 + 4 乘客</b></div>
+        <div><span>推进形式</span><b>6 倾转旋翼</b></div>
+        <div><span>起降噪音</span><b>约 65 dB（比直升机低约 100 倍）</b></div>
+      </div>
+      <p class="note">已进入 FAA 符合性测试后期，计划 2026 年底至 2027 年投入商业运营，迪拜为首批落地城市之一。丰田为战略投资方。[reference:0][reference:1]</p>
+    </div>
+
+    <div class="pcard">
+      <div class="flag">中国 · 分体式</div>
+      <h3>小鹏汇天 “陆地航母”</h3>
+      <div class="role">陆行体 + 飞行体（X3-F）分体设计</div>
+      <div class="specs">
+        <div><span>陆行体续航</span><b>CLTC 超 1000 km</b></div>
+        <div><span>飞行体续航</span><b>约 200 km</b></div>
+        <div><span>飞行体构型</span><b>六轴十二旋翼</b></div>
+        <div><span>陆行体驱动</span><b>800V 碳化硅增程 / 6×6</b></div>
+        <div><span>预估售价</span><b>约 198 万元</b></div>
+        <div><span>驾驶资质</span><b>C 照 + 短期培训</b></div>
+      </div>
+      <p class="note">广州工厂规划年产能 1 万台，2026 年量产交付，全球订单已突破 7000 台。飞行体 X3-F 已进入适航审定阶段，TC/PC 申请均已受理。[reference:2][reference:3][reference:4]</p>
+    </div>
+
+    <div class="pcard">
+      <div class="flag">美国 · 陆空一体</div>
+      <h3>Alef Model A</h3>
+      <div class="role">可地面行驶 + 垂直起降的一体式飞行汽车</div>
+      <div class="specs">
+        <div><span>地面续航</span><b>约 321 km</b></div>
+        <div><span>空中续航</span><b>约 177 km</b></div>
+        <div><span>空中最高速度</span><b>约 177 km/h</b></div>
+        <div><span>地面极速</span><b>约 40 km/h</b></div>
+        <div><span>整车重量</span><b>约 385 kg</b></div>
+        <div><span>售价</span><b>约 222 万元人民币</b></div>
+      </div>
+      <p class="note">已获 FAA 特别适航认证，2026 年开始向首批客户交付，累计订单超 3300 份。球形座舱 + 内置螺旋桨，设计取向更接近“会飞的汽车”而非“可载人的飞行器”。[reference:5][reference:6]</p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 横向对比 ================= -->
+<section id="compare">
+  <div class="sec-label">02 / COMPARISON</div>
+  <h2 class="sec-title">关键维度横向对比</h2>
+  <p class="sec-desc">
+    对比不只看参数，更要看“参数在什么条件下可用”。设计航程与商业航程之间的差距、取证状态、以及量产准备度，直接决定了产品的真实可用性。
+  </p>
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>维度</th>
+          <th>Joby S4</th>
+          <th>小鹏汇天 陆地航母</th>
+          <th>Alef Model A</th>
+          <th>亿航 EH216-S</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>技术路线</td>
+          <td>倾转旋翼纯电 eVTOL</td>
+          <td>分体式（增程陆行体 + 纯电飞行体）</td>
+          <td>一体式陆空两用</td>
+          <td>多旋翼纯电 eVTOL</td>
+        </tr>
+        <tr>
+          <td>典型航程</td>
+          <td>设计 241 km / 商业 161 km</td>
+          <td>飞行体约 200 km</td>
+          <td>空中约 177 km</td>
+          <td>短途观光为主</td>
+        </tr>
+        <tr>
+          <td>适航状态</td>
+          <td><span class="tag warn">FAA 符合性测试后期</span></td>
+          <td><span class="tag warn">TC/PC 申请受理，审定中</span></td>
+          <td><span class="tag ok">FAA 特别适航认证</span></td>
+          <td><span class="tag ok">TC + PC + AC 三证齐全</span></td>
+        </tr>
+        <tr>
+          <td>商业化节奏</td>
+          <td>2026 末–2027 年启动运营</td>
+          <td>2026 年量产交付，订单超 7000 台</td>
+          <td>2026 年开始交付</td>
+          <td>2026 年 3 月启动付费商业运营</td>
+        </tr>
+        <tr>
+          <td>核心场景</td>
+          <td>城市空中出租车</td>
+          <td>高端个人出行 + 飞行体验</td>
+          <td>个人陆空两用</td>
+          <td>低空观光（A 点到 A 点）</td>
+        </tr>
+        <tr>
+          <td>主要约束</td>
+          <td>取证周期与基础设施</td>
+          <td>飞行体取证 + 空域调度</td>
+          <td>飞行性能有限，更接近“体验型”</td>
+          <td>航程短，场景单一</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 技术瓶颈 ================= -->
+<section id="tech">
+  <div class="sec-label">03 / TECHNOLOGY</div>
+  <h2 class="sec-title">技术可行性：卡点不在“能不能飞”，在“能不能安全、经济地反复飞”</h2>
+  <p class="sec-desc">
+    飞行汽车的子系统与关键技术中，动力与能源、安全冗余与适航保障是专利增速最快、同时也是制约商业化的核心瓶颈。倾转旋翼构型占比已升至 43%，多旋翼降至 31%，行业正从“验证形态”向“高效能形态”收敛。[reference:7]
+  </p>
+
+  <div class="tech-grid">
+    <div class="tcard">
+      <div class="num">01</div>
+      <h4>电池能量密度与热管理</h4>
+      <p>
+        当前锂离子化学体系同时限制航程、载荷和储备电量。热失控防护与坠撞安全要求进一步增加设计负担。
+        固态电池被视为满足商业飞行安全标准的关键跃迁，目标能量密度 400–1000 Wh/kg，但界面稳定性、锂枝晶与制造成本仍是工程障碍。[reference:8][reference:9]
+      </p>
+      <div class="status">现状：电芯能量密度已突破 420 Wh/kg，典型航程从 2023 年的 120 km 提升至 250 km，但距离“城市密集区常态化运营”仍有距离。[reference:10]</div>
+    </div>
+
+    <div class="tcard">
+      <div class="num">02</div>
+      <h4>分布式电推进与构型验证</h4>
+      <p>
+        eVTOL 融合了动力升力、倾转过渡和分布式电推进，工程复杂度远超传统 Part 23/27 飞机。
+        悬停→前飞→悬停的过渡飞行是安全性与可靠性验证中最困难的环节，V-22 的历史经验也说明机械复杂性与维护负担会严重侵蚀速度与航程优势。[reference:11]
+      </p>
+      <div class="status">现状：倾转旋翼成为主流收敛方向，但容错架构仍在成熟过程中。[reference:12]</div>
+    </div>
+
+    <div class="tcard">
+      <div class="num">03</div>
+      <h4>飞控软件与适航保证</h4>
+      <p>
+        高完整性飞控律需达到 DO-178C / DO-254 级别的严格程度。分布式推进要求容错架构，而有人驾驶场景下的飞行员工作负荷、能量状态感知与过渡模式人机界面仍是开放问题。[reference:13]
+      </p>
+      <div class="status">现状：软件与飞控的适航符合性方法仍在与局方共同建立中，不是单纯的技术问题。</div>
+    </div>
+
+    <div class="tcard">
+      <div class="num">04</div>
+      <h4>适航审定体系本身</h4>
+      <p>
+        中国民航局已建立 TC / PC / AC “三证”体系，eVTOL 专用适航标准体系基本覆盖飞行性能、结构强度、动力系统、航电与电池安全。
+        TC 取证通常需要 3–5 年，占整个取证周期的大部分时间；亿航 EH216-S 在 TC 阶段完成了超过 500 个科目摸底试验和 4 万余架次试飞。[reference:14][reference:15]
+      </p>
+      <div class="status">现状：体系已从“空白”进入“有章可循”，但定制化审定条件仍会拉长单个型号的取证时间。[reference:16]</div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 应用场景 ================= -->
+<section id="scenes">
+  <div class="sec-label">04 / SCENARIOS</div>
+  <h2 class="sec-title">应用场景不会同时打开，而是分层递进</h2>
+  <p class="sec-desc">
+    飞行汽车的商业化路径呈现清晰的“专业化先行、大众化跟进”逻辑。当前真正产生收入或接近产生收入的场景，集中在低空观光与特定专业化任务，而非日常通勤。
+  </p>
+
+  <div class="scenes">
+    <div class="scene">
+      <span>第一阶段 · 已发生</span>
+      <h4>低空观光 / 体验飞行</h4>
+      <p>
+        亿航 EH216-S 在合肥骆岗公园以 299 元 / 3.5 分钟的价格开展 A 点到 A 点的闭环观光，累计安全飞行已突破 5000 架次，月均起降 158 架次。
+        这是目前最接近“可复制收入模型”的场景，但客单价与复购率的天花板明显。[reference:17]
+      </p>
+    </div>
+    <div class="scene">
+      <span>第二阶段 · 正在展开</span>
+      <h4>应急救援、警务安防、公路巡检</h4>
+      <p>
+        专业化场景对成本敏感度较低，对时间价值敏感度极高。飞行汽车在医疗转运、消防侦察、边境巡检等任务中的价值主张更直接，也更适合作为早期运营数据积累的入口。[reference:18]
+      </p>
+    </div>
+    <div class="scene">
+      <span>第三阶段 · 条件性成立</span>
+      <h4>机场接驳 / 城际短途</h4>
+      <p>
+        沃飞长空与川航通航的合作将“民航 + 低空出行”联程服务作为首批落地场景。规模化运营后成本约为专车的 2–3 倍，但可节约 80% 以上时间。
+        这一场景成立的前提是起降点密度与空域调度能力同步到位。[reference:19]
+      </p>
+    </div>
+    <div class="scene">
+      <span>远期 · 尚未验证</span>
+      <h4>日常城市通勤</h4>
+      <p>
+        这是飞行汽车叙事中最具吸引力的部分，也是当前数据最不支持的部分。飞行模式续航、起降场地密度、空中交通调度、噪音接受度与单座成本，共同构成日常通勤场景的硬约束。
+        何小鹏提出的“市场份额超过传统汽车”属于 10–20 年尺度的长期判断，不应与当下的可行性判断混同。[reference:20]
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- ================= 市场可行性 ================= -->
+<section id="market">
+  <div class="sec-label">05 / MARKET</div>
+  <h2 class="sec-title">市场可行性：规模预测存在口径差异，但方向一致</h2>
+  <p class="sec-desc">
+    不同机构对“飞行汽车市场”的统计口径差异很大（是否包含出行服务、是否包含陆行体、是否仅计制造端），直接比较绝对值容易误读。更有参考价值的是增速、份额结构与先行指标。
+  </p>
+
+  <div class="market-grid">
+    <div class="mcard">
+      <div class="big">$1330 亿</div>
+      <div class="label">2025 年全球市场规模（宽口径，含出行服务等）</div>
+      <div class="src">《飞行汽车发展报告 2.0》[reference:21]</div>
+    </div>
+    <div class="mcard">
+      <div class="big">~23%</div>
+      <div class="label">中国企业全球份额（2025–2030 基本稳定）</div>
+      <div class="src">同上[reference:22]</div>
+    </div>
+    <div class="mcard">
+      <div class="big">$3000 亿</div>
+      <div class="label">2030 年全球市场规模预测</div>
+      <div class="src">摩根士丹利等机构方向一致[reference:23][reference:24]</div>
+    </div>
+    <div class="mcard">
+      <div class="big">1.2 万台</div>
+      <div class="label">2030 年中国载人 eVTOL 年新增需求预测</div>
+      <div class="src">保时捷管理咨询白皮书[reference:25]</div>
+    </div>
+  </div>
+
+  <div class="table-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>先行指标</th>
+          <th>当前状态</th>
+          <th>对市场可行性的含义</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>适航取证进度</td>
+          <td>亿航已四证齐全；小鹏汇天 TC/PC 审定中；Joby 接近 FAA 取证终点</td>
+          <td>取证是收入的前置条件，取证节奏直接决定 2026–2027 年的实际交付量</td>
+        </tr>
+        <tr>
+          <td>在手订单</td>
+          <td>小鹏汇天全球订单突破 7000 台；Alef 超 3300 份</td>
+          <td>订单说明需求存在，但定金订单与确认收入之间仍有取证和产能两道关卡[reference:26]</td>
+        </tr>
+        <tr>
+          <td>产能准备</td>
+          <td>小鹏广州工厂规划年产能 1 万台，电推进单元累计下线超 1000 套</td>
+          <td>“万辆级”产能是行业从未有过的量级，爬坡风险与供应链成熟度是关键变量[reference:27]</td>
+        </tr>
+        <tr>
+          <td>基础设施</td>
+          <td>深圳计划 2027 年前建成 1200 个以上起降点；广州承诺投入超 100 亿元</td>
+          <td>起降点密度决定场景能否从“点对点观光”扩展到“网络化出行”[reference:28]</td>
+        </tr>
+        <tr>
+          <td>成本曲线</td>
+          <td>推进系统占整机成本约 40%，电机功率密度需达车用电机 2 倍</td>
+          <td>成本下降依赖碳纤维量产与电池突破，2030 年成本“砍半”是乐观假设而非基准情形[reference:29][reference:30]</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+
+<!-- ================= 可行性判断 ================= -->
+<section id="verdict">
+  <div class="sec-label">06 / VERDICT</div>
+  <h2 class="sec-title">分层可行性判断</h2>
+  <p class="sec-desc">
+    笼统地说“飞行汽车可行”或“不可行”没有意义。更准确的判断是：<strong style="color:#fff;">在特定形态、特定场景、特定时间窗口内可行；作为大众化交通工具的全面可行性尚未被验证。</strong>
+  </p>
+
+  <div class="verdict">
+    <div class="vcard">
+      <div class="vhead"><span class="dot" style="background:var(--ok);"></span><h4>技术可行性 · 条件性成立</h4></div>
+      <p>
+        “能飞、能安全起降、能完成点对点飞行”已经在多个型号上得到验证。亿航三证齐全并进入付费运营，Joby 接近取证终点，说明工程底线可以被跨过。
+        但“高利用率、低维护成本、全 weather 运行”的航空级可靠性，仍需运营数据积累。
+      </p>
+      <div class="conclusion c-ok">判断：作为“飞行器”的技术可行性成立；作为“高频交通工具”的技术可行性待验证。</div>
+    </div>
+
+    <div class="vcard">
+      <div class="vhead"><span class="dot" style="background:var(--warn);"></span><h4>市场可行性 · 早期商业化成立，规模化待条件</h4></div>
+      <p>
+        低空观光与专业化场景已经产生真实收入和运营数据。订单规模说明存在支付意愿，但订单集中在高净值个人与 B/G 端，距离大众市场仍有数量级差距。
+        基础设施与成本曲线是规模化能否发生的两个前置变量。
+      </p>
+      <div class="conclusion c-warn">判断：2026–2028 年是“生态构建窗口期”，而非规模放量期。[reference:31]</div>
+    </div>
+
+    <div class="vcard">
+      <div class="vhead"><span class="dot" style="background:var(--danger);"></span><h4>核心风险 · 取证、空域与成本的三重不确定性</h4></div>
+      <p>
+        适航审定体系仍在完善，跨部门协同和沙盒监管机制尚未成熟；城市密集区的应急自控与轻量化混动技术仍是硬约束；航空级材料与工艺推高单价，大众化普及的时间表存在后移风险。
+      </p>
+      <div class="conclusion c-danger">判断：技术风险在下降，但制度风险与商业风险并未同步下降。</div>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <strong>飞行汽车深度调研</strong> · 刘天一 15230610<br>
+  本页面为课程作业，数据来源于公开行业报告、企业公告与适航审定公开信息，截止 2026 年 11 月。
+</footer>
+
+</body>
+</html>
